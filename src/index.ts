@@ -4,27 +4,39 @@ import {
   Page,
   KeyInput,
   Frame,
+  LaunchOptions,
 } from 'puppeteer';
-import {createRequire} from 'module';
+import { createRequire } from 'module';
+import languages from './languages.js';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import path from 'path';
 const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-extra');
 
-puppeteer.use(StealthPlugin());
 
-const DefaultOptions: BrowserLaunchArgumentOptions = {
+const DefaultOptions: LaunchOptions & BrowserLaunchArgumentOptions = {
   headless: true,
+  ignoreDefaultArgs: true
 };
 
 class Uploader {
-  options: BrowserLaunchArgumentOptions;
+  options: LaunchOptions & BrowserLaunchArgumentOptions;
   url: string;
   frame: Frame | undefined;
   browser: Browser | undefined;
-  constructor(url: string, options: BrowserLaunchArgumentOptions = {}) {
+  constructor(url: string, options: LaunchOptions & BrowserLaunchArgumentOptions = {}) {
     this.url = url;
     this.options = options;
+    if (!this.options.executablePath) {
+
+      console.warn(`\x1b[43m   "executablePath" is missing:\x1b[0m
+\x1b[33m    This package depends on puppeteer, which uses the latest version of Chromium.
+    The latest Chromium has problems with persistent login sessions, which may cause errors or unexpected behavior.
+    To avoid this, you need to provide the "executablePath" option in your "new Uploader()" call,
+    pointing to the path of the Chromium or Chrome executable that you want to use.\x1b[0m`);
+
+    }
+
     if (!this.options.userDataDir) {
       throw new Error('UserDataDir is required');
     }
@@ -44,38 +56,56 @@ class Uploader {
     );
     await input.uploadFile(pathToFile);
     await this.frame.waitForSelector(`img[src$="${fileName}"]`);
+
     const src = await this.frame.evaluate(
       fileName =>
         document.querySelector(`img[src$="${fileName}"]`)?.getAttribute('src'),
       fileName
     );
+
     if (!src) {
       throw new Error('Image not found');
     }
 
-    // await page.click('div[data-tooltip="Insert image"]');
     return src;
-    // return result;
   }
 
   async init() {
     puppeteer.use(StealthPlugin());
     const options = Object.assign({}, DefaultOptions, this.options);
+
+    const args = [`--user-data-dir=${options.userDataDir}`];
+    if (options.headless) {
+      args.push('--headless')
+    }
+    if (options.args && Array.isArray(options.args)) {
+      args.push(...options.args)
+    }
+    options.args = args
+
     const browser = await puppeteer.launch(options);
     this.browser = browser;
     const page: Page = await browser.newPage();
+
     await page.goto(this.url);
+
     const language = await page.evaluate(() =>
       document.querySelector('html')?.getAttribute('lang')
     );
-    if (language !== 'en' && !language?.startsWith('en-')) {
-      throw new Error('page language is not english');
+
+    if (!page.url().startsWith(this.url)) {
+      throw new Error("Sorry, You've been redirected to " + page.url())
     }
-    await page.waitForSelector('div[data-tooltip="Insert image"]');
-    await this.focusClick(page, ['data-tooltip', 'Insert image']);
+
+    if (language && !(language in languages)) {
+      throw new Error('Sorry, language is not supported\nlanguage: ' + language);
+    }
+
+    await page.waitForSelector(`div[data-tooltip="${languages[language].insert_image}"]`);
+    await this.focusClick(page, ['data-tooltip', languages[language].insert_image]);
     await this.focusClick(
       page,
-      ['aria-label', 'Upload from computer'],
+      ['aria-label', languages[language].from_computer],
       'ArrowDown'
     );
     await page.waitForSelector("[src^='https://www.blogger.com/picker']");
@@ -120,30 +150,6 @@ class Uploader {
       await this.browser.close();
     }
   }
-  // private changeFileName(pathToFile: string): {path: string; file: string} {
-  //   const fileName = v4();
-  //   const newPath = path.join(
-  //     path.dirname(pathToFile),
-  //     `${fileName}${path.extname(pathToFile)}`
-  //   );
-
-  //   return {path: newPath, file: fileName + path.extname(pathToFile)};
-  // }
 }
 
-// const uploader = new Uploader(
-//   'https://www.blogger.com/blog/post/edit/2287467253597550952/542979903295670849',
-//   {
-//     userDataDir: 'C:\\Users\\hhh\\AppData\\Local\\Google\\Chrome\\User Data',
-//   }
-// );
-// await uploader.init();
-
-// const result = await Promise.all([
-//   uploader.upload('D:\\github\\blogger-image\\src\\image.png'),
-//   uploader.upload('D:\\github\\blogger-image\\src\\image1.png'),
-// ]);
-
-// console.log(result);
-// uploader.close();
 export default Uploader;

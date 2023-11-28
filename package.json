@@ -1,6 +1,6 @@
 {
   "name": "blogger-image",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "upload images using blogger",
   "main": "build/index.js",
   "repository": "https://github.com/ahmedelwerdany/blogger-image",
@@ -23,9 +23,9 @@
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "prepare": "yarn.cmd run compile",
-    "pretest": "yarn.cmd run compile",
-    "posttest": "yarn.cmd run lint"
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run lint"
   },
   "engines": {
     "node": ">=12.2.0"

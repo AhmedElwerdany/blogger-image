@@ -13,35 +13,79 @@ npm i blogger-image
 yarn add blogger-image
 ```
 
+## Usage
 ```javascript
 import Uploader from 'blogger-image'
 
-// link to an empty blog post
-const link = 'https://www.blogger/blog/post/edit/../...'
 
-// options:  https://pptr.dev/api/puppeteer.browserlaunchargumentoptions
+const POST_ID = "https://www.blogger.com/blog/post/edit/.../...";
 
-const options = {
-    // path to your data, so it's easier to be logged in to blogger.
-    userDataDir: 'C:\\Users\\ahmed\\AppData\\Local\\Google\\Chrome\\User Data',
-}
-
-const uploader = new Uploader(link, options);
+const uploader = new Uploader(
+  POST_ID,
+  {
+    userDataDir: '/home/username/.config/chromium',
+    // it is recommended to use an old version of chromium instead of the default browser.
+    executablePath: '/home/username/.config/chrome-linux/chrome',  
+  }
+);
+  
 await uploader.init();
 
-// upload two files
 const result = await Promise.all([
-  uploader.upload('./newtest.png'),
-  uploader.upload('./Screenshot 2021-12-21 130153.png'),
+  uploader.upload('./tree.png'),
 ]);
 
-// or upload one by one 
-const link1 = await uploader.upload('./newtest.png')
-const link2 = await uploader.upload('./Screenshot 2021-12-21 130153.png')
-
 console.log(result);
-console.log(link1);
-console.log(link2);
-await uploader.close();
+
+// the `upload` method will not be available after this.
+uploader.close();
+```
+### kowen Issues 
+This package depends on `puppeteer`, which uses the latest version of Chromium.  
+The latest Chromium has problems with persistent login sessions, which may cause errors or unexpected behavior.  
+To avoid this, you need to use an old version on chromium and provide the "executablePath" option in your "new Uploader()" call, pointing to the path of the Chromium executable.
+
+Follow the next instructions if you want to download an older version of Chromium and use it with the package.
+
+#### Download an Old version of Chromium
+```shell
+cd ~/.config
+```
+```shell
+wget "https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2F962947%2Fchrome-linux.zip?generation=1643115368404678&alt=media" -q  --show-progress -O chrome_2f962947.zip
+```
+```shell
+unzip chrome_2f962947.zip
+```
+
+#### Login to Blogger
+
+This will open the The version that we just downloaded.
+```shell
+cd chrome-linux; ./chrome
+```
+- Go to `blogger.com`
+- Login
+- Close the browser
+```shell
+pwd
+```
+Copy the result becuase you're gonna need it in `excutablePath`.  
+It should be `/home/{username}/.config/chrome-linux` where `{username}` is your username.
+
+Add it to the options.
+```javascript
+
+const uploader = new Uploader(
+  POST_ID,
+  {
+    userDataDir: '/home/username/.config/chromium',
+    executablePath: '/home/username/.config/chrome-linux/chrome', // recomnded
+  }
+);
+
+await uploader.init();
+
 
 ```
+
