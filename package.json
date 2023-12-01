@@ -1,7 +1,8 @@
 {
   "name": "blogger-image",
   "version": "1.1.1",
-  "description": "upload images using blogger",
+  "description": "A fast, free tool for hassle-free photo uploads to your blog using a simple API.",
+  "keywords": ["image", "upload", "blogger", "blogger-api","upload-images", "puppeteer", "api"],
   "main": "build/index.js",
   "repository": "https://github.com/ahmedelwerdany/blogger-image",
   "author": "Ahmed Elwerdany",
