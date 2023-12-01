@@ -89,9 +89,14 @@ class Uploader {
 
     await page.goto(this.url);
 
-    const language = await page.evaluate(() =>
+    let language = await page.evaluate(() =>
       document.querySelector('html')?.getAttribute('lang')
     );
+
+    if (language.includes('-')) {
+      const index_of_dash = language.indexOf('-');
+      language = language.slice(0, index_of_dash);
+    }
 
     if (!page.url().startsWith(this.url)) {
       throw new Error("Sorry, You've been redirected to " + page.url())
